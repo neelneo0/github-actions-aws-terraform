@@ -1,0 +1,50 @@
+name: NEW PR Terraform CI/CD
+
+on:
+  pull_request:
+    types: [opened] # Trigger ONLY when a new PR is created (not on updates/pushes to the PR)
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  pull-requests: write
+  actions: read
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.5.7
+
+    - name: Terraform Init
+      run: terraform init
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    # 1. Generate and save plan ONLY on PR Creation
+    - name: Terraform Plan
+      if: github.event_name == 'pull_request'
+      run: |
+        terraform plan -no-color -out=tfplan
+        terraform show -json tfplan > tfplan.json
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    # Saves artifact specifically pinned to this exact PR run ID 
+    - name: Upload Plan Artifact
+      if: github.event_name == 'pull_request'
+      uses: actions/upload-artifact@v4
+      with:
+        name: tfplan-pr-${{ github.event.number }} # Unique name isolating it to this PR
+        path: tfplan
+        retention-days: 2
