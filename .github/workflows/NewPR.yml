@@ -76,6 +76,7 @@ jobs:
     - name: Terraform Apply
       run: terraform apply -auto-approve
 
+      #Cleanup steps to remove plan files after apply
     - name: Remove Plan Files
       run: |
         rm -f tfplan tfplan.json
