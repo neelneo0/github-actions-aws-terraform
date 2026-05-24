@@ -13,7 +13,7 @@ permissions:
   actions: read
 
 jobs:
-  Terraform plan:
+  Terraform_plan:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     env:
@@ -55,7 +55,7 @@ jobs:
         git commit -m "Add terraform plan files for PR #${{ github.event.number }}"
         git push
 
-  Terraform apply:
+  Terraform_apply:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     env:
