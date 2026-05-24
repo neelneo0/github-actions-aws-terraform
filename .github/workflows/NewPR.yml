@@ -8,7 +8,7 @@ on:
     branches: [ main ]
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
   actions: read
 
@@ -18,6 +18,8 @@ jobs:
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
+      with:
+        ref: ${{ github.head_ref || github.ref_name }}
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
@@ -45,8 +47,18 @@ jobs:
       if: github.event_name == 'pull_request'
       uses: actions/upload-artifact@v4
       with:
-        name: tfplan-pr-${{ github.event.number }} # Unique name isolating it to this PR
+        name: tfplan-pr-${{ github.event.number }}
         path: |
           tfplan
           tfplan.json
         retention-days: 2
+
+    # Commit tfplan and tfplan.json to the PR branch
+    - name: Commit Plan Files to PR Branch
+      if: github.event_name == 'pull_request'
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add tfplan tfplan.json
+        git commit -m "Add terraform plan files for PR #${{ github.event.number }}"
+        git push
